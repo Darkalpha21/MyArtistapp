@@ -1,25 +1,33 @@
+
+
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart' as http;
+import 'package:http/http.dart';
+import 'package:http/http.dart' as http hide Response;
 import 'package:intl/intl.dart';
-import 'package:my_artist_demo/models/groups.dart';
-import 'package:my_artist_demo/models/user.dart';
-import 'package:my_artist_demo/services/odoo_api.dart';
-import 'package:my_artist_demo/services/odoo_response.dart';
-import 'package:my_artist_demo/theme/theme_controller.dart';
-import 'package:my_artist_demo/utility/color_constants.dart';
-import 'package:my_artist_demo/utility/constant.dart';
-import 'package:my_artist_demo/utility/images.dart';
-import 'package:my_artist_demo/utility/shared_prefs.dart';
-import 'package:my_artist_demo/utility/strings.dart';
-import 'package:my_artist_demo/utility/styles.dart';
+import 'package:my_artist_demo/app/models/user.dart';
+import 'package:my_artist_demo/app/screens/auth/login.dart';
+import 'package:my_artist_demo/app/services/odoo_api.dart';
+import 'package:my_artist_demo/app/services/odoo_response.dart';
+import 'package:my_artist_demo/app/theme/theme_controller.dart';
+import 'package:my_artist_demo/app/utility/color_constants.dart';
+import 'package:my_artist_demo/app/utility/constant.dart';
+import 'package:my_artist_demo/app/utility/images.dart';
+import 'package:my_artist_demo/app/utility/shared_prefs.dart';
+import 'package:my_artist_demo/app/utility/strings.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:http/http.dart' as http;
+
+import 'app/models/groups.dart';
+import 'app/utility/styles.dart';
+import 'app/utility/translation/translations.dart';
 
 abstract class Base<T extends StatefulWidget> extends State<T> {
   late Odoo odoo;
@@ -113,10 +121,14 @@ abstract class Base<T extends StatefulWidget> extends State<T> {
     SharedPrefs.instance.setString(Constants.ODOO_URL, url);
   }
 
-  void getGroups()
-  {
-    rightUser = groups!.groupUser!;
-    rightSaleManager = groups!.groupSaleManager!;
+  void getGroups() {
+    if (groups == null) {
+      print("❌ groups is null");
+      return;
+    }
+
+    rightUser = groups!.groupUser ?? false;
+    rightSaleManager = groups!.groupSaleManager ?? false;
   }
 
   void setPartnerMobile(String value) {
@@ -250,7 +262,7 @@ abstract class Base<T extends StatefulWidget> extends State<T> {
     var url =
         'mailto:$email?subject=$subject&body=$message';
     try{
-      await launchUrl(Uri.parse(url));
+        await launchUrl(Uri.parse(url));
     } on Exception{
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -266,7 +278,7 @@ abstract class Base<T extends StatefulWidget> extends State<T> {
         path: contactNumber
     );
     try {
-      await launchUrl(phoneUri);
+        await launchUrl(phoneUri);
     } catch (error) {
       throw("Cannot dial");
     }
@@ -335,6 +347,15 @@ abstract class Base<T extends StatefulWidget> extends State<T> {
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
+  String translate(String text) {
+    if (!mounted) return "";
+
+    Translations? translations = Translations.of(context);
+    if (translations != null) {
+      return translations.text(text);
+    }
+    return "";
+  }
 
   String getPlaceholderImageUrl(String label) {
     return 'https://picsum.photos/300/150?text=$label';
@@ -353,7 +374,7 @@ abstract class Base<T extends StatefulWidget> extends State<T> {
     }
     if (message.contains("Session expired") || message.contains("404")) {
       isLoginInProgress = true;
-      // pushAndRemoveUntil(const Login());
+      pushAndRemoveUntil(const Login());
       return;
     }
     if (Platform.isAndroid) {
@@ -363,8 +384,8 @@ abstract class Base<T extends StatefulWidget> extends State<T> {
         builder: (BuildContext ctxt) {
           return AlertDialog(
             title: Text(
-                title,
-                style: textBoldBlack
+              title,
+              style: textBoldBlack
             ),
             content:
             Text(message, style: textRegularBlack),
@@ -392,8 +413,8 @@ abstract class Base<T extends StatefulWidget> extends State<T> {
         builder: (BuildContext ctxt) {
           return CupertinoAlertDialog(
             title: Text(
-                title,
-                style: textBoldBlack
+              title,
+              style: textBoldBlack
             ),
             content:
             Text(message, style: textRegularBlack),
@@ -441,9 +462,9 @@ abstract class Base<T extends StatefulWidget> extends State<T> {
         });
       }
       else
-      {
-        redirectLogin();
-      }
+        {
+          redirectLogin();
+        }
     }
     catch(e)
     {
@@ -457,7 +478,7 @@ abstract class Base<T extends StatefulWidget> extends State<T> {
     String? odooUrl = SharedPrefs.instance.getString(Constants.ODOO_URL);
     SharedPrefs.instance.clear();
     SharedPrefs.instance.setString(Constants.ODOO_URL, odooUrl!);
-    // pushAndRemoveUntil(const Login());
+    pushAndRemoveUntil(const Login());
   }
 
   Future<bool> isNetworkConnected() async {
@@ -627,7 +648,7 @@ abstract class Base<T extends StatefulWidget> extends State<T> {
           }
         } else {
           hideLoading();
-          showMessage("warning" , res.getErrorMessage());
+          showMessage(translate('warning'), res.getErrorMessage());
         }
       },
     );
@@ -643,7 +664,7 @@ abstract class Base<T extends StatefulWidget> extends State<T> {
         builder: (BuildContext ctxt) {
           return AlertDialog(
             title: Text(
-              "warning",
+              translate("warning"),
               style: const TextStyle(
                 fontFamily: "Montserrat",
                 fontSize: 22,
@@ -652,7 +673,7 @@ abstract class Base<T extends StatefulWidget> extends State<T> {
               ),
             ),
             content: Text(
-              "server_not_responding",
+              translate("server_not_responding"),
               style: const TextStyle(
                 fontFamily: "Montserrat",
                 fontSize: 18,
@@ -666,7 +687,7 @@ abstract class Base<T extends StatefulWidget> extends State<T> {
                   pushAndRemoveUntil(const Login());
                 },
                 child: Text(
-                  "ok",
+                  translate("ok"),
                   style: const TextStyle(
                     fontFamily: "Montserrat",
                     fontWeight: FontWeight.bold,
@@ -685,7 +706,7 @@ abstract class Base<T extends StatefulWidget> extends State<T> {
         builder: (BuildContext ctxt) {
           return CupertinoAlertDialog(
             title: Text(
-              "warning",
+              translate("warning"),
               style: const TextStyle(
                 fontFamily: "Montserrat",
                 fontSize: 22,
@@ -694,7 +715,7 @@ abstract class Base<T extends StatefulWidget> extends State<T> {
               ),
             ),
             content: Text(
-              "server_not_responding",
+              translate("server_not_responding"),
               style: const TextStyle(
                 fontFamily: "Montserrat",
                 fontSize: 18,
@@ -708,7 +729,7 @@ abstract class Base<T extends StatefulWidget> extends State<T> {
                   pushAndRemoveUntil(const Login());
                 },
                 child: Text(
-                  "ok",
+                  translate("ok"),
                   style: const TextStyle(
                     fontFamily: "Montserrat",
                     fontWeight: FontWeight.bold,
@@ -758,7 +779,7 @@ abstract class Base<T extends StatefulWidget> extends State<T> {
           dTime.hour, dTime.minute, dTime.second);
       result = DateFormat('yyyy-MM-dd HH:mm:ss').format(utcDate.toLocal());
     }
-    return result;
+      return result;
   }
 
   String? toLocalOnlyDateString(String? dateTime) {
@@ -766,13 +787,13 @@ abstract class Base<T extends StatefulWidget> extends State<T> {
     if (dateTime != null && dateTime != "") {
       DateTime dTime;
       if(dateTime.contains(":"))
-      {
-        dTime = DateFormat("yyyy-MM-dd HH:mm:ss").parse(dateTime);
-      }
+        {
+          dTime = DateFormat("yyyy-MM-dd HH:mm:ss").parse(dateTime);
+        }
       else
-      {
-        dTime = DateFormat("yyyy-MM-dd").parse(dateTime);
-      }
+        {
+          dTime = DateFormat("yyyy-MM-dd").parse(dateTime);
+        }
       DateTime utcDate = DateTime.utc(dTime.year, dTime.month, dTime.day,
           dTime.hour, dTime.minute, dTime.second);
       result = DateFormat('yyyy-MM-dd').format(utcDate.toLocal());
@@ -783,8 +804,8 @@ abstract class Base<T extends StatefulWidget> extends State<T> {
 
   Text setAppTitle(String title) {
     return Text(
-        title,
-        style: textRegularWhite20px
+      title,
+      style: textRegularWhite20px
     );
   }
 
@@ -878,7 +899,7 @@ abstract class Base<T extends StatefulWidget> extends State<T> {
   }
 
   Future<String?> networkImageToBase64(String imageUrl) async {
-    http.Response response = await http.get(Uri.parse(imageUrl));
+    Response response = await http.get(Uri.parse(imageUrl));
     final bytes = response.bodyBytes;
     return (bytes != null ? base64Encode(bytes) : null);
   }

@@ -1,0 +1,304 @@
+import 'dart:async';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:my_artist_demo/app/models/tags.dart';
+import 'package:my_artist_demo/app/screens/artists/artists_list_screen.dart';
+import 'package:my_artist_demo/app/services/odoo_response.dart';
+import 'package:my_artist_demo/app/theme/theme_controller.dart';
+import 'package:my_artist_demo/app/utility/images.dart';
+import 'package:my_artist_demo/app/utility/styles.dart';
+import 'package:my_artist_demo/app/widgets/custom_app_bar.dart';
+import 'package:my_artist_demo/base.dart';
+
+
+class CategoryTagsScreen extends StatefulWidget {
+  const CategoryTagsScreen({super.key});
+
+  @override
+  State<StatefulWidget> createState() {
+    return CategoryTagsScreenState();
+  }
+}
+
+class CategoryTagsScreenState extends Base<CategoryTagsScreen> {
+  final TextEditingController _searchQuery = TextEditingController();
+  List<Tags> _tagList = [];
+  Widget appBarTitle = Text("Category", style: poppinsBold);
+
+  @override
+  void initState() {
+    super.initState();
+    getOdooInstance().then((odoo) {
+      _refresh();
+    });
+  }
+
+  Future<void> _refresh() async {
+    final Completer<void> completer = Completer<void>();
+    Timer(const Duration(seconds: 0), () {
+      completer.complete(null);
+    });
+    return completer.future.then((_) {
+      offset = 0;
+      _tagList = [];
+      getTags("");
+      _searchQuery.addListener(() {
+        getTags(_searchQuery.text, isSearch: true);
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: CustomAppBar(titleWidget: appBarTitle,
+          actions: <Widget>[
+            IconButton(
+              icon: actionIcon,
+              onPressed: () {
+                setState(() {
+                  if (actionIcon.icon == Icons.search) {
+                    actionIcon = const Icon(Icons.close);
+                    appBarTitle = TextField(
+                      controller: _searchQuery,
+                      style: ThemeService().getDarkTheme()
+                          ? textBoldWhite
+                          : poppinsBold,
+                      decoration: InputDecoration(
+                          prefixIcon: Icon(Icons.search,
+                              color: ThemeService().getDarkTheme()
+                                  ? Colors.white
+                                  : Colors.grey),
+                          hintText: "Search...",
+                          hintStyle: poppinsRegular.copyWith(
+                              color: ThemeService().getDarkTheme()
+                                  ? Colors.white
+                                  : Colors.grey)),
+                    );
+                  } else {
+                    _handleSearchEnd();
+                  }
+                });
+              },
+            ),
+          ]
+      ),
+      body: body(context),
+    );
+  }
+  void _handleSearchEnd() {
+    setState(() {
+      actionIcon = const Icon(Icons.search);
+      appBarTitle = Text("Category", style: poppinsBold);
+      isLoading = false;
+      _searchQuery.clear();
+      _tagList.isNotEmpty ? isListFound = true : isListFound = false;
+    });
+  }
+
+  RefreshIndicator body(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      child: Stack(children: [
+        Container(
+          color: Colors.white,
+          padding: EdgeInsets.all(10.sp),
+          child:
+          ListView(
+                  shrinkWrap: true,
+                  physics: const ScrollPhysics(),
+                  children: [
+          GridView.count(
+            crossAxisCount: 3,
+            // itemCount: category.categoryList.length,
+            padding: EdgeInsets.only(
+                left: 10.sp),
+            physics: const NeverScrollableScrollPhysics(),
+            // scrollDirection: Axis.horizontal,
+            // childAspectRatio: (itemWidth / itemHeight),
+            childAspectRatio: 1.0,
+            shrinkWrap: true,
+            children: List.generate(
+                _tagList.length, (index) {
+              Tags tag = _tagList[index];
+              return
+                InkWell(
+                  onTap: () {
+                    Get.to(() => ArtistsListScreen(tagId: tag,), transition: Transition.downToUp);
+                  },
+                  child:
+                  // Card(
+                  //   // color: ColorConstants.buttonBgColor,
+                  //   child:
+                  Container(
+                    // width: 100.w,
+                    margin: EdgeInsets.all(5.sp),
+                    padding: EdgeInsets.all(5.sp),
+                    child:
+                    Column(
+                        crossAxisAlignment:
+                        CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment
+                            .center,
+                        children: [
+                          CachedNetworkImage(
+                            imageUrl: tag.image!,
+                            // placeholder: (context, url) => Center( child : CircularProgressIndicator()),
+                            errorWidget: (context, url,
+                                error) =>
+                                Image.asset(Images.logo,
+                                    fit: BoxFit.fill,
+                                    width: 40.w,
+                                    height: 40.h),
+                            fit: BoxFit.fill,
+                            width: 40.w,
+                            height: 40.h,
+                          ),
+                          SizedBox(height: 5.h),
+
+                          Text(tag.name!,
+                              maxLines: 2,
+                              textAlign: TextAlign.center,
+                              style: textBold10px),
+
+                        ]),
+                  ),
+                  // )
+
+
+                );
+            }),
+          )
+            ])
+              // Column(
+              //   children: [
+              //     Expanded(child:
+              //     ListView(
+              //       shrinkWrap: true,
+              //       physics: const ScrollPhysics(),
+              //       children: [
+              //         Column(
+              //           crossAxisAlignment: CrossAxisAlignment.start,
+              //           mainAxisAlignment: MainAxisAlignment.start,
+              //           children: [
+              //             GridView.count(
+              //               crossAxisCount: 2,
+              //               // itemCount: category.categoryList.length,
+              //               padding: EdgeInsets.only(
+              //                   left: 10.sp),
+              //               physics: const NeverScrollableScrollPhysics(),
+              //               // scrollDirection: Axis.horizontal,
+              //               // childAspectRatio: (itemWidth / itemHeight),
+              //               childAspectRatio: getDeviceType() == "phone" ? 2.0 : 2.5,
+              //               shrinkWrap: true,
+              //               children: List.generate(
+              //                   _tagList.length, (index) {
+              //                 Tags tag = _tagList[index];
+              //                 return
+              //                   InkWell(
+              //                     onTap: () {
+              //                       Get.to(() => ArtistsListScreen(tagId: tag,), transition: Transition.downToUp);
+              //                     },
+              //                     child:
+              //                     Card(
+              //                       color: ColorConstants.buttonBgColor,
+              //                       child:
+              //                       Container(
+              //                         // width: 100.w,
+              //                         margin: EdgeInsets.all(5.sp),
+              //                         padding: EdgeInsets.all(5.sp),
+              //                         child: Row(
+              //                             crossAxisAlignment: CrossAxisAlignment.center,
+              //                             mainAxisAlignment: MainAxisAlignment.center,
+              //                             children: [
+              //                               Expanded(child:
+              //                               Text(
+              //                                 tag.name!,
+              //                                 style: textBoldWhite10px,
+              //                                 maxLines: 3,
+              //                                 overflow: TextOverflow.ellipsis,
+              //                               )),
+              //
+              //                               SizedBox(
+              //                                   height: 40.h,
+              //                                   child:
+              //                                   ClipRRect(
+              //                                     borderRadius:
+              //                                     BorderRadius.circular(10.r),
+              //                                     child: CachedNetworkImage(
+              //                                       imageUrl: tag.image!,
+              //                                       // placeholder: (context, url) => CircularProgressIndicator(),
+              //                                       errorWidget: (context, url,
+              //                                           error) =>
+              //                                           Image.asset(Images.logo),
+              //                                       fit: BoxFit.fill,
+              //                                     ),
+              //                                   )
+              //                               ),
+              //
+              //                             ]),
+              //                       ),
+              //                     )
+              //
+              //
+              //                   );
+              //               }),
+              //             )
+              //           ],
+              //         )
+              //       ],
+              //     )),
+              //   ],
+              // )
+
+
+        ),
+       
+        !isListFound ? showEmptyList() : Container(),
+      ]),
+      // )
+    );
+  }
+
+  getTags(String query, {bool isSearch = false}) {
+    isNetworkConnected().then((isInternet) async {
+      if (isInternet) {
+        setState(() {
+          isLoading = true;
+        });
+        Map<String, dynamic> values = {};
+        if (query != "" || isSearch) {
+          values["search_text"] = query;
+          offset = 0;
+        }
+        await odoo.callShowTags(values).then((OdooResponse res) async {
+          if (!res.hasError()) {
+            setState(() {
+              isLoading = false;
+              if (query != "" || isSearch) {
+                _tagList.clear();
+              }
+              for (var record in res.getResult()["tag_details"]) {
+                Tags tags =
+                Tags.fromJson(record, getURL(), getSession());
+                _tagList.add(tags);
+              }
+            });
+          } else {
+            setState(() {
+              isLoading = false;
+            });
+            showMessage("Warning", res.getErrorMessage());
+          }
+        });
+      }
+    });
+  }
+
+  String getDeviceType() {
+    final data = MediaQueryData.fromWindow(WidgetsBinding.instance.window);
+    return data.size.shortestSide < 600 ? 'phone' :'tablet';
+  }
+}

@@ -1,15 +1,18 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get_navigation/src/root/get_material_app.dart';
-import 'package:my_artist_demo/screens/splash/splashscreen_page.dart';
-import 'package:my_artist_demo/theme/hive_initializer.dart';
-import 'package:my_artist_demo/theme/theme.dart';
-import 'package:my_artist_demo/theme/theme_controller.dart';
-import 'package:my_artist_demo/utility/shared_prefs.dart';
-import 'package:my_artist_demo/utility/strings.dart';
+import 'package:my_artist_demo/app/models/user.dart';
+import 'package:my_artist_demo/app/screens/splash/splashscreen_page.dart';
+import 'package:my_artist_demo/app/theme/hive_initializer.dart';
+import 'package:my_artist_demo/app/theme/theme.dart';
+import 'package:my_artist_demo/app/theme/theme_controller.dart';
+import 'package:my_artist_demo/app/utility/constant.dart';
+import 'package:my_artist_demo/app/utility/shared_prefs.dart';
+import 'package:my_artist_demo/app/utility/strings.dart';
 import 'package:path_provider/path_provider.dart';
 import 'base.dart';
 import 'package:http/http.dart' as http;
@@ -31,6 +34,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await openBox();
   await SharedPrefs.init();
+  String? userData = SharedPrefs.instance.getString(Constants.USER_PREF);
   runApp(const App());
 }
 // Future<void> _configureLocalTimeZone() async {
